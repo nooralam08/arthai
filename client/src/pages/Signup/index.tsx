@@ -4,10 +4,11 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 
-import { register, login } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export const SignupPage: React.FC = () => {
   const navigate = useNavigate();
+  const { register, login } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

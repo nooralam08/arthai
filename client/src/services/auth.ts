@@ -9,16 +9,18 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface SafeUser {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
 export interface AuthResponse {
   success: boolean;
   message?: string;
   error?: string;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    createdAt: string;
-  };
+  user?: SafeUser;
 }
 
 const AUTH_BASE_URL = '/api/auth';
@@ -79,6 +81,64 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
 
     if (!response.ok) {
       throw new Error(data?.error || `Login failed with status ${response.status}`);
+    }
+
+    return data;
+  } catch (err: any) {
+    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      throw new Error('Unable to connect to the server. Please check your network or ensure the backend is running.');
+    }
+    throw err;
+  }
+}
+
+/**
+ * Retrieve the current authenticated user's profile.
+ * Communicates with GET /api/auth/me using credentials.
+ */
+export async function getMe(): Promise<AuthResponse> {
+  try {
+    const response = await fetch(`${AUTH_BASE_URL}/me`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(data?.error || `Authentication required (status ${response.status})`);
+    }
+
+    return data;
+  } catch (err: any) {
+    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      throw new Error('Unable to connect to the server. Please check your network or ensure the backend is running.');
+    }
+    throw err;
+  }
+}
+
+/**
+ * Log out the current user and clear the HTTP-only cookie.
+ * Communicates with POST /api/auth/logout using credentials.
+ */
+export async function logout(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const response = await fetch(`${AUTH_BASE_URL}/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(data?.error || `Logout failed with status ${response.status}`);
     }
 
     return data;

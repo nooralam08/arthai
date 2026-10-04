@@ -1,13 +1,37 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from '../../components/common/Card';
 import { useApiHealth } from '../../services/useApiHealth';
 import { formatCurrency } from '../../utils/formatters';
+import { useAuth } from '../../context/AuthContext';
 
 export const DashboardPage: React.FC = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const { status, message, refetch } = useApiHealth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+      navigate('/login');
+    }
+  };
+
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .filter(Boolean)
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    : 'AJ';
+
 
   // Static demo metrics
   const netWorth = 142500;
@@ -132,12 +156,20 @@ export const DashboardPage: React.FC = () => {
             )}
           </div>
 
-          <Link
-            to="/"
-            className="block text-center text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-          >
-            &larr; Return to Public Site
-          </Link>
+          <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <button
+              onClick={handleLogout}
+              className="w-full text-center text-xs font-medium text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 py-1 transition cursor-pointer"
+            >
+              Sign Out
+            </button>
+            <Link
+              to="/"
+              className="block text-center text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            >
+              &larr; Return to Public Site
+            </Link>
+          </div>
         </div>
       </aside>
 
@@ -160,7 +192,7 @@ export const DashboardPage: React.FC = () => {
                 Financial Dashboard
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-                Welcome back, Alex &bull; Static Demo Workspace
+                Welcome back, {user?.name || 'Alex'} &bull; Personal Workspace
               </p>
             </div>
           </div>
@@ -173,9 +205,20 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             {/* User profile avatar badge */}
-            <div className="h-8 w-8 rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 flex items-center justify-center font-bold text-xs">
-              AJ
+            <div
+              title={user?.email || user?.name || ''}
+              className="h-8 w-8 rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 flex items-center justify-center font-bold text-xs"
+            >
+              {initials}
             </div>
+
+            {/* Sign out button */}
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+              Sign Out
+            </button>
           </div>
         </header>
 
