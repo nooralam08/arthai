@@ -4,6 +4,8 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 
+import { register, login } from '../../services/api';
+
 export const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
@@ -13,11 +15,12 @@ export const SignupPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setError('');
 
-    if (!fullName || !email || !password || !confirmPassword) {
+    if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
       setError('Please fill out all required fields.');
       return;
     }
@@ -32,12 +35,37 @@ export const SignupPage: React.FC = () => {
       return;
     }
 
-    // UI-only simulation for Phase 2: navigate to dashboard
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      setIsLoading(true);
+
+      // 1. Call backend registration endpoint
+      const registerRes = await register({
+        name: fullName.trim(),
+        email: email.trim(),
+        password,
+      });
+
+      if (!registerRes.success) {
+        setError(registerRes.error || 'Registration failed. Please try again.');
+        return;
+      }
+
+      // 2. Automatically log in to establish the session cookie
+      try {
+        await login({
+          email: email.trim(),
+          password,
+        });
+      } catch {
+        // Fallback: If auto-login fails, redirect will still proceed to dashboard
+      }
+
       navigate('/dashboard');
-    }, 400);
+    } catch (err: any) {
+      setError(err instanceof Error ? err.message : 'Unable to create account. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -79,6 +107,7 @@ export const SignupPage: React.FC = () => {
               placeholder="Alex Johnson"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              disabled={isLoading}
               required
               autoComplete="name"
             />
@@ -89,6 +118,7 @@ export const SignupPage: React.FC = () => {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
               required
               autoComplete="email"
             />
@@ -99,6 +129,7 @@ export const SignupPage: React.FC = () => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
               required
               autoComplete="new-password"
             />
@@ -109,23 +140,17 @@ export const SignupPage: React.FC = () => {
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={isLoading}
               required
               autoComplete="new-password"
             />
 
             <div className="pt-2">
-              <Button type="submit" fullWidth isLoading={isLoading}>
+              <Button type="submit" fullWidth isLoading={isLoading} disabled={isLoading}>
                 Create Account
               </Button>
             </div>
           </form>
-
-          {/* Prototype note */}
-          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              Phase 2 Prototype: UI only. Submitting opens the Dashboard demo.
-            </p>
-          </div>
         </Card>
 
         {/* Switch to Login */}

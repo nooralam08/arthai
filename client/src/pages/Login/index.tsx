@@ -4,6 +4,8 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 
+import { login } from '../../services/api';
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -11,21 +13,29 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setError('');
 
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       setError('Please provide both email and password.');
       return;
     }
 
-    // UI-only simulation for Phase 2: navigate to dashboard
-    setIsLoading(true);
-    setTimeout(() => {
+    try {
+      setIsLoading(true);
+      const res = await login({ email, password });
+      if (res.success) {
+        navigate('/dashboard');
+      } else {
+        setError(res.error || 'Invalid email or password.');
+      }
+    } catch (err: any) {
+      setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 400);
+    }
   };
 
   return (
@@ -50,7 +60,7 @@ export const LoginPage: React.FC = () => {
               Sign in to your account
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Enter your credentials to access the demo financial dashboard.
+              Enter your credentials to access your financial dashboard.
             </p>
           </div>
 
@@ -67,6 +77,7 @@ export const LoginPage: React.FC = () => {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
               required
               autoComplete="email"
             />
@@ -77,23 +88,17 @@ export const LoginPage: React.FC = () => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
               required
               autoComplete="current-password"
             />
 
             <div className="pt-2">
-              <Button type="submit" fullWidth isLoading={isLoading}>
+              <Button type="submit" fullWidth isLoading={isLoading} disabled={isLoading}>
                 Sign In
               </Button>
             </div>
           </form>
-
-          {/* Prototype note */}
-          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              Phase 2 Prototype: Submitting redirects to Dashboard demo without saving data.
-            </p>
-          </div>
         </Card>
 
         {/* Switch to Signup */}
